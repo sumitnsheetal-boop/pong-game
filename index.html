@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pong Game - AI Challenge</title>
+    <style>
+        body { background-color: #222; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; color: white; font-family: Arial, sans-serif; overflow: hidden; }
+        canvas { border: 4px solid #fff; background-color: #000; box-shadow: 0 0 20px rgba(255,255,255,0.2); }
+        #scoreboard { position: absolute; top: 50px; font-size: 48px; font-weight: bold; pointer-events: none; }
+    </style>
+</head>
+<body>
+    <div id="scoreboard">0 : 0</div>
+    <canvas id="pong" width="800" height="400"></canvas>
+
+    <script>
+        const canvas = document.getElementById("pong");
+        const ctx = canvas.getContext("2d");
+        const scoreboard = document.getElementById("scoreboard");
+
+        let userScore = 0;
+        let aiScore = 0;
+
+        const ball = { x: canvas.width/2, y: canvas.height/2, radius: 10, speed: 5, velX: 5, velY: 5, color: "#FFF" };
+        const user = { x: 0, y: canvas.height/2 - 50, width: 10, height: 100, color: "#FFF" };
+        const ai = { x: canvas.width - 10, y: canvas.height/2 - 50, width: 10, height: 100, color: "#FFF" };
+
+        canvas.addEventListener("mousemove", (e) => {
+            let rect = canvas.getBoundingClientRect();
+            user.y = e.clientY - rect.top - user.height/2;
+        });
+
+        window.addEventListener("keydown", (e) => {
+            if(e.key === "ArrowUp") user.y -= 20;
+            if(e.key === "ArrowDown") user.y += 20;
+        });
+
+        function drawRect(x, y, w, h, color) {
+            ctx.fillStyle = color;
+            ctx.fillRect(x, y, w, h);
+        }
+
+        function drawCircle(x, y, r, color) {
+            ctx.fillStyle = color;
+            ctx.beginPath();
+            ctx.arc(x, y, r, 0, Math.PI*2, false);
+            ctx.closePath();
+            ctx.fill();
+        }
+
+        function resetBall() {
+            ball.x = canvas.width/2;
+            ball.y = canvas.height/2;
+            ball.speed = 5;
+            ball.velX = -ball.velX;
+        }
+
+        function collision(b, p) {
+            return b.x + b.radius > p.x && b.x - b.radius < p.x + p.width && b.y + b.radius > p.y && b.y - b.radius < p.y + p.height;
+        }
+
+        function update() {
+            ball.x += ball.velX;
+            ball.y += ball.velY;
+
+            // AI Logic
+            ai.y += (ball.y - (ai.y + ai.height/2)) * 0.08;
+
+            if(ball.y + ball.radius > canvas.height || ball.y - ball.radius < 0) ball.velY = -ball.velY;
+
+            let player = (ball.x < canvas.width/2) ? user : ai;
+            if(collision(ball, player)) {
+                let collidePoint = ball.y - (player.y + player.height/2);
+                collidePoint = collidePoint / (player.height/2);
+                let angleRad = collidePoint * Math.PI/4;
+                let direction = (ball.x < canvas.width/2) ? 1 : -1;
+                ball.velX = direction * ball.speed * Math.cos(angleRad);
+                ball.velY = ball.speed * Math.sin(angleRad);
+                ball.speed += 0.2;
+            }
+
+            if(ball.x - ball.radius < 0) { aiScore++; scoreboard.innerHTML = `${userScore} : ${aiScore}`; resetBall(); }
+            else if(ball.x + ball.radius > canvas.width) { userScore++; scoreboard.innerHTML = `${userScore} : ${aiScore}`; resetBall(); }
+        }
+
+        function render() {
+            drawRect(0, 0, canvas.width, canvas.height, "#000");
+            drawRect(user.x, user.y, user.width, user.height, user.color);
+            drawRect(ai.x, ai.y, ai.width, ai.height, ai.color);
+            drawCircle(ball.x, ball.y, ball.radius, ball.color);
+        }
+
+        function game() { update(); render(); }
+        setInterval(game, 1000/60);
+    </script>
+</body>
+</html>
